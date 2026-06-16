@@ -16,7 +16,6 @@ void AmmoniaUV::begin() {
     digitalWrite(_relayPin, HIGH); // Default state
 }
 
-// Ang pangunahing logic ng Ammonia sensor at UV Sterilizer Relay
 void AmmoniaUV::update() {
     _rawAmmonia = analogRead(_mq137Pin);
     _estimatedVoltage = (_rawAmmonia / 4095.0) * 3.3;

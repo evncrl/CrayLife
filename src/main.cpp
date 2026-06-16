@@ -35,6 +35,9 @@ MQTTManager mqttManager(
 unsigned long lastUpdateTime = 0;
 const unsigned long UPDATE_INTERVAL = 2000;
 
+unsigned long lastLightUpdateTime = 0;
+const unsigned long LIGHT_UPDATE_INTERVAL = 1000;
+
 // ====================================================================
 // MQTT CALLBACK
 // ====================================================================
@@ -93,15 +96,18 @@ void loop() {
     mqttManager.maintain();
     mqttManager.loop();
 
-    // Update Grow Light Continuously
-    growLight.update();
-
     // Every 2 seconds
     unsigned long currentMillis = millis();
 
     if (currentMillis - lastUpdateTime >= UPDATE_INTERVAL) {
 
         lastUpdateTime = currentMillis;
+
+        // ============================================================
+        // GROW LIGHT SYSTEM (Inilipat dito para sumabay sa 2s delay)
+        // ============================================================
+        
+        growLight.update();
 
         // ============================================================
         // AMMONIA SYSTEM
