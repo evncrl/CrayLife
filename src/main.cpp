@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include "Config.h"
 #include "Ammonia_UV.h"
-#include "BHT1750.h"
+#include "BHT1751.h"
 #include "MQTTManager.h"
-#include "IR.h"
+// #include "IR.h"
 
 // ====================================================================
 // SUBSYSTEM INSTANCES
@@ -20,8 +20,8 @@ AmmoniaUV ammoniaSubsystem(
 GrowLight growLight;
 
 // 🆕 Shelter Dynamic Structural Controller
-const int irPins[NUM_SENSORS] = SENSOR_PINS_INIT;
-ShelterSystem shelterSubsystem(irPins, SERVO_PIN);
+// const int irPins[NUM_SENSORS] = SENSOR_PINS_INIT;
+// ShelterSystem shelterSubsystem(irPins, SERVO_PIN);
 
 // MQTT Manager
 MQTTManager mqttManager(
@@ -75,11 +75,11 @@ void setup() {
     // Initialize Ammonia Sensor + UV Relay
     ammoniaSubsystem.begin();
 
-    // Initialize BH1750 + Grow Light
+    // Initialize BT17501 + Grow Light
     growLight.begin();
 
     // 🆕 Initialize Modular Shelter Subsystem
-    shelterSubsystem.begin();
+    // shelterSubsystem.begin();
 
     // Initialize MQTT Broker Link
     mqttManager.begin(onMqttMessage);
@@ -101,10 +101,10 @@ void loop() {
     // ----------------------------------------------------------------
     // TASK 1: RUN SHELTER MONITORING ARRAY (Every 500ms)
     // ----------------------------------------------------------------
-    if (currentMillis - lastShelterTime >= SENSOR_POLL_INTERVAL) {
-        lastShelterTime = currentMillis;
-        shelterSubsystem.update();
-    }
+    // if (currentMillis - lastShelterTime >= SENSOR_POLL_INTERVAL) {
+    //     lastShelterTime = currentMillis;
+    //     shelterSubsystem.update();
+    // }
 
     // ----------------------------------------------------------------
     // TASK 2: RUN ENVIRONMENTAL UPDATE & MQTT TELEMETRY (Every 2000ms)
@@ -118,9 +118,16 @@ void loop() {
         // Run ammonia threshold comparison evaluations
         ammoniaSubsystem.update();
 
-        // Package and ship system payloads
+        // // Package and ship system payloads
         String ammoniaPayload = String(ammoniaSubsystem.getRawAmmonia());
         mqttManager.publish(MQTT_TOPIC_AMMONIA, ammoniaPayload.c_str());
+
+        String luxPayload = String(growLight.getLux(), 1); // 1 decimal place
+        mqttManager.publish(MQTT_TOPIC_LIGHT_LUX, luxPayload.c_str());
+
+        String lightstatusPayload = growLight.getLightStatus();
+        mqttManager.publish(MQTT_TOPIC_LIGHT_STATUS, lightstatusPayload.c_str());
+
         mqttManager.publish(MQTT_TOPIC_STATUS, "ONLINE");
     }
 }
