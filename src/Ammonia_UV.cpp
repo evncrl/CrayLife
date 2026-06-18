@@ -21,18 +21,10 @@ void AmmoniaUV::update() {
     _rawAmmonia = analogRead(_mq137Pin);
     _estimatedVoltage = (_rawAmmonia / 4095.0) * 3.3;
 
-    Serial.print("[DATA LOG] Raw ADC: ");
-    Serial.print(_rawAmmonia);
-    Serial.print(" | Sensor Voltage: ");
-    Serial.print(_estimatedVoltage);
-    Serial.print(" V");
-
     if (_rawAmmonia > _threshold) {
         digitalWrite(_relayPin, LOW); 
-        Serial.println(" -> [ALERT] HIGH AMMONIA DETECTED! UV Sterilizer is NOW ON.");
     } else {
         digitalWrite(_relayPin, HIGH);  
-        Serial.println(" -> [STATUS] Safe levels. UV Sterilizer is OFF.");
     }
 }
 

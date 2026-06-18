@@ -19,5 +19,6 @@
     ],
     "python.autoComplete.extraPaths": [
         "c:/Users/Elaine/.vscode/extensions/rt-thread.rt-thread-micropython-1.0.11/microExamples/code-completion"
-    ]
+    ],
+    "C_Cpp.errorSquiggles": "disabled"
 }

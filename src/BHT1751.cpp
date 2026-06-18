@@ -6,6 +6,7 @@ GrowLight::GrowLight() {
     _targetBrightness = BRIGHTNESS_OFF;
     _lastReadTarget = -1;
     _stableReadCount = 0;
+    _currentStatus = "UNKNOWN";
 }
 
 // Initialization task
@@ -18,17 +19,12 @@ void GrowLight::begin() {
     // Initializing BH1750 on defined I2C pins
     Wire.begin(SDA_PIN, SCL_PIN);
     _lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE);
-
-    Serial.println("=============================================");
-    Serial.println(" [INIT] Modular Grow Light System Online     ");
-    Serial.println("=============================================");
 }
 
 // Main execution loop method called inside master loop
 void GrowLight::update() {
     float lux = getLux();
     int requiredBrightness;
-    String status;
 
     // Evaluate light condition threshold maps
     if (lux >= BRIGHT_THRESHOLD) {
@@ -53,26 +49,15 @@ void GrowLight::update() {
         _currentStatus = "DARK";
     }
 
-    Serial.print("[GROW LIGHT] ");
-    Serial.print(_currentStatus);
-    Serial.print(" -> ");
-    Serial.print(lux);
-    Serial.print(" lx -> ");
-
     // Check for sensor data stabilization
     if (requiredBrightness != _lastReadTarget) {
         _lastReadTarget = requiredBrightness;
         _stableReadCount = 1;
-        Serial.println("(stabilizing...)");
     }
     else {
         _stableReadCount++;
         if (_stableReadCount >= STABLE_READS_NEEDED) {
             _targetBrightness = requiredBrightness;
-            Serial.print("Target Settled to: ");
-            Serial.println(_targetBrightness);
-        } else {
-            Serial.println("(stabilizing...)");
         }
     }
 
