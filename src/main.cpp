@@ -37,7 +37,7 @@ MQTTManager mqttManager(
 // TIMERS (Non-blocking Timing Tasks)
 // ====================================================================
 unsigned long lastEnvironmentTime = 0;
-const unsigned long ENVIRONMENT_INTERVAL = 2000;
+const unsigned long ENVIRONMENT_INTERVAL = 3000;
 
 unsigned long lastShelterTime = 0;
 

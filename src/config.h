@@ -75,8 +75,8 @@
 // 📌 TIMING SETTINGS
 // ====================================================================
 #define READ_DELAY_MS         100
-#define STABLE_READS_NEEDED   10
-#define DIMMING_STEP          15
+#define STABLE_READS_NEEDED   1
+#define DIMMING_STEP          50
 
 // 🆕 SHELTER TIMING & POLARITY SETTINGS
 // ====================================================================
