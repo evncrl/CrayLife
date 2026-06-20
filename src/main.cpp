@@ -3,7 +3,7 @@
 #include "Ammonia_UV.h"
 #include "BHT1751.h"
 #include "MQTTManager.h"
-// #include "IR.h"
+#include "IR.h"
 
 // ====================================================================
 // SUBSYSTEM INSTANCES
@@ -19,10 +19,6 @@ AmmoniaUV ammoniaSubsystem(
 // Grow Light Control
 GrowLight growLight;
 
-// 🆕 Shelter Dynamic Structural Controller
-// const int irPins[NUM_SENSORS] = SENSOR_PINS_INIT;
-// ShelterSystem shelterSubsystem(irPins, SERVO_PIN);
-
 // MQTT Manager
 MQTTManager mqttManager(
     WIFI_SSID,
@@ -33,11 +29,21 @@ MQTTManager mqttManager(
     MQTT_TOPIC_CONTROL
 );
 
+// 🆕 Shelter Dynamic Structural Controller
+const int irPins[NUM_SENSORS] = SENSOR_PINS_INIT;
+IR shelterSubsystem(
+    NUM_SENSORS, 
+    irPins, 
+    SERVO_PIN, 
+    REQUIRED_TRIGGER_TIME, 
+    mqttManager
+);
+
 // ====================================================================
 // TIMERS (Non-blocking Timing Tasks)
 // ====================================================================
 unsigned long lastEnvironmentTime = 0;
-const unsigned long ENVIRONMENT_INTERVAL = 3000;
+const unsigned long ENVIRONMENT_INTERVAL = 1000;
 
 unsigned long lastShelterTime = 0;
 
@@ -56,7 +62,15 @@ bool lastMqttState = false;
 // MQTT CALLBACK
 // ====================================================================
 void onMqttMessage(char* topic, byte* payload, unsigned int length) {
-    // Keep silent to prevent dashboard layout disruption
+    String message = "";
+    for (unsigned int i = 0; i < length; i++) {
+        message += (char)payload[i];
+    }
+    
+    // Remote Command Manual Override Handling
+    if (message == "SHAKE") {
+        shelterSubsystem.shakeShelter();
+    }
 }
 
 // ====================================================================
@@ -95,6 +109,11 @@ void setup() {
     Serial.println("PWM Brightness   : [UPDATING...]");
 
     Serial.println();
+    Serial.println("--- SHELTER SUBSYSTEM ---");
+    Serial.println("Occupied Count   : [UPDATING...]");
+    Serial.println("Timer Countdown  : [UPDATING...]");
+
+    Serial.println();
     Serial.println("--- NETWORK STATUS ---");
     Serial.println("MQTT Connection  : [UPDATING...]");
     Serial.println("=================================================");
@@ -105,6 +124,9 @@ void setup() {
 
     // Initialize BT17501 + Grow Light
     growLight.begin();
+
+    // Initialize Shelter Monitoring Array
+    shelterSubsystem.begin();
 
     // Initialize MQTT Broker Link
     mqttManager.begin(onMqttMessage);
@@ -121,7 +143,6 @@ void loop() {
     mqttManager.maintain();
     mqttManager.loop();
 
-    // Patuloy na patakbuhin ang light dimming logic nang walang delay block
     growLight.update();
 
     unsigned long currentMillis = millis();
@@ -129,10 +150,10 @@ void loop() {
     // ----------------------------------------------------------------
     // TASK 1: RUN SHELTER MONITORING ARRAY (Every 500ms)
     // ----------------------------------------------------------------
-    // if (currentMillis - lastShelterTime >= SENSOR_POLL_INTERVAL) {
-    //      lastShelterTime = currentMillis;
-    //      shelterSubsystem.update();
-    // }
+    if (currentMillis - lastShelterTime >= SENSOR_POLL_INTERVAL) {
+         lastShelterTime = currentMillis;
+         shelterSubsystem.update();
+    }
 
     // ----------------------------------------------------------------
     // TASK 2: RUN ENVIRONMENTAL UPDATE & MQTT TELEMETRY (Every 3000ms)
@@ -158,8 +179,6 @@ void loop() {
         // ====================================================================
         // 📌 PURE RAW LOG VERTICAL REFRESH ENGINE (VS Code Fix)
         // ====================================================================
-        // Nag-pi-print ng saktong bilang ng bagong linya para itulak pataas ang lumang dashboard.
-        // Dahil dito, laging nakapako sa ilalim ng VS Code window ang pinakabagong dashboard panel.
         for (int i = 0; i < 40; i++) { Serial.println(); }
 
         Serial.println("=================================================");
@@ -182,6 +201,12 @@ void loop() {
         Serial.print("Ambient Light    : "); Serial.print(growLight.getLux(), 1);       Serial.println(" lx");
         Serial.print("Light Status     : "); Serial.println(growLight.getLightStatus()); 
         Serial.print("PWM Brightness   : "); Serial.print(growLight.getCurrentBrightness()); Serial.println(" / 255");
+
+        Serial.println("-------------------------------------------------");
+
+        // 🆕 --- SHELTER MONITORING STATUS DISPLAY ---
+        Serial.print("Occupied Count   : "); Serial.printf("%d / %d Active\n", shelterSubsystem.getLastTriggeredCount() == -1 ? 0 : shelterSubsystem.getLastTriggeredCount(), NUM_SENSORS);
+        Serial.print("Timer Countdown  : "); Serial.println(shelterSubsystem.isTrackingActive() ? "[COUNTING DOWN]" : "[IDLE / NO LOCK]");
 
         Serial.println("-------------------------------------------------");
 

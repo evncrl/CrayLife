@@ -23,19 +23,14 @@ public:
     // Constructor
     MQTTManager(const char* ssid, const char* password, const char* broker, int port, const char* clientId, const char* subscribeTopic);
 
-    // I-setup ang network at callback function
     void begin(MQTT_CALLBACK_SIGNATURE);
 
-    // Panatilihing buhay ang koneksyon (dapat tawagin sa loop)
     void maintain();
 
-    // Mag-publish ng data patungo sa isang partikular na topic
     bool publish(const char* topic, const char* payload);
 
-    // I-expose ang loop function ng PubSubClient
     void loop();
 
-    // Suriin kung konektado
     bool isConnected();
 };
 

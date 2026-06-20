@@ -37,12 +37,10 @@ void MQTTManager::begin(MQTT_CALLBACK_SIGNATURE) {
 }
 
 void MQTTManager::maintain() {
-    // Kung walang Wi-Fi, hayaan ang ESP32 auto-reconnect na gumana sa background
     if (WiFi.status() != WL_CONNECTED) {
         return; 
     }
 
-    // Kung may Wi-Fi pero disconnected sa MQTT, subukang mag-reconnect
     if (!_mqttClient.connected()) {
         Serial.print("[MQTT] Connecting to broker at ");
         Serial.println(_broker);
