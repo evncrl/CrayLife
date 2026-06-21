@@ -1,10 +1,11 @@
 #include <Arduino.h>
-#include "Config.h"
+#include "config.h"
 #include "Ammonia_UV.h"
 #include "BHT1751.h"
 #include "MQTTManager.h"
 #include "IR.h"
 
+const int irPins[NUM_SENSORS] = SENSOR_PINS_INIT;
 // ====================================================================
 // SUBSYSTEM INSTANCES
 // ====================================================================
@@ -30,7 +31,7 @@ MQTTManager mqttManager(
 );
 
 // 🆕 Shelter Dynamic Structural Controller
-const int irPins[NUM_SENSORS] = SENSOR_PINS_INIT;
+
 IR shelterSubsystem(
     NUM_SENSORS, 
     irPins, 
@@ -144,31 +145,27 @@ void loop() {
     mqttManager.loop();
 
     growLight.update();
+    
+    // CRITICAL FIX: Run the shelter subsystem unthrottled every loop!
+    // Its internal state machine handles its own timing loops safely.
+    shelterSubsystem.update(); 
 
     unsigned long currentMillis = millis();
 
     // ----------------------------------------------------------------
-    // TASK 1: RUN SHELTER MONITORING ARRAY (Every 500ms)
-    // ----------------------------------------------------------------
-    if (currentMillis - lastShelterTime >= SENSOR_POLL_INTERVAL) {
-         lastShelterTime = currentMillis;
-         shelterSubsystem.update();
-    }
-
-    // ----------------------------------------------------------------
-    // TASK 2: RUN ENVIRONMENTAL UPDATE & MQTT TELEMETRY (Every 3000ms)
+    // TASK 2: RUN ENVIRONMENTAL UPDATE & MQTT TELEMETRY (Every 1000ms / 3000ms)
     // ----------------------------------------------------------------
     if (currentMillis - lastEnvironmentTime >= ENVIRONMENT_INTERVAL) {
         lastEnvironmentTime = currentMillis;
 
-        // I-update ang mga sensor evaluations sa background
+        // Update environmental evaluations in background
         ammoniaSubsystem.update();
 
         // Package and ship system payloads via MQTT
         String ammoniaPayload = String(ammoniaSubsystem.getRawAmmonia());
         mqttManager.publish(MQTT_TOPIC_AMMONIA, ammoniaPayload.c_str());
 
-        String luxPayload = String(growLight.getLux(), 1); // 1 decimal place
+        String luxPayload = String(growLight.getLux(), 1); 
         mqttManager.publish(MQTT_TOPIC_LIGHT_LUX, luxPayload.c_str());
 
         String lightstatusPayload = growLight.getLightStatus();
@@ -204,13 +201,13 @@ void loop() {
 
         Serial.println("-------------------------------------------------");
 
-        // 🆕 --- SHELTER MONITORING STATUS DISPLAY ---
+        // --- SHELTER MONITORING STATUS DISPLAY ---
         Serial.print("Occupied Count   : "); Serial.printf("%d / %d Active\n", shelterSubsystem.getLastTriggeredCount() == -1 ? 0 : shelterSubsystem.getLastTriggeredCount(), NUM_SENSORS);
         Serial.print("Timer Countdown  : "); Serial.println(shelterSubsystem.isTrackingActive() ? "[COUNTING DOWN]" : "[IDLE / NO LOCK]");
 
         Serial.println("-------------------------------------------------");
 
-        // --- SYSTEM INVENTORY & NETWORK STATUS ---
+        // --- NETWORK STATUS ---
         Serial.print("MQTT Connection  : "); 
         if (mqttManager.isConnected()) {
             Serial.println("CONNECTED");

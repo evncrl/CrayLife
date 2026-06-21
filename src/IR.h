@@ -2,8 +2,7 @@
 #define IR_H
 
 #include <Arduino.h>
-#include <ESP32Servo.h>
-#include "Config.h"
+#include "config.h"
 #include "MQTTManager.h"
 
 class IR {
@@ -18,10 +17,15 @@ private:
     MQTTManager* _mqttManager;
 
     // Internal state tracking
-    Servo _shelterServo;
     int _lastTriggeredCount;
     unsigned long _simultaneousStartTime;
     bool _trackingActive;
+    
+    // Non-blocking shake state machine
+    int _shakePhase;              // 0=idle, 1-5=shake movements, 6=cooldown
+    unsigned long _shakeStartTime;
+    const int SHAKE_MOVE_DURATION = 150;  // ms per servo movement
+    const int SHAKE_COOLDOWN_DURATION = 3000;  // ms cooldown after shake
 
 public:
     // This constructor matches your 5-argument main.cpp call perfectly

@@ -16,8 +16,9 @@ void GrowLight::begin() {
     ledcAttachPin(GROWLIGHT_PIN, LEDC_CHANNEL);
     ledcWrite(LEDC_CHANNEL, BRIGHTNESS_OFF);
 
-    // Initializing BH1750 on defined I2C pins
+    // Initializing BH1750 on defined I2C pins with slower clock for servo EMI immunity
     Wire.begin(SDA_PIN, SCL_PIN);
+    Wire.setClock(I2C_CLOCK_STRETCH);  // Slower I2C = more noise resistant
     _lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE);
 }
 

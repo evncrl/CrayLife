@@ -1,10 +1,10 @@
-#ifndef BHT1750_H
-#define BHT1750_H
+#ifndef BHT1751_H
+#define BHT1751_H
 
 #include <Arduino.h>
 #include <Wire.h>
 #include <BH1750.h>
-#include "Config.h" // Gives access to thresholds, pins, and PWM settings
+#include "config.h" // Gives access to thresholds, pins, and PWM settings
 
 class GrowLight {
 private:
@@ -34,4 +34,4 @@ public:
     String getLightStatus();
 };
 
-#endif // BHT1750_H
+#endif // BHT1751_H

@@ -23,6 +23,9 @@
 #define MQTT_TOPIC_LIGHT_LUX     "craylife/sensor/light"
 #define MQTT_TOPIC_LIGHT_STATUS  "craylife/growlight/status"
 
+// Shelter telemetry topics
+#define MQTT_TOPIC_SHELTER_COUNT "craylife/sensor/shelter_count"
+
 // ====================================================================
 // 📌 HARDWARE PINS (ESP32)
 // ====================================================================
@@ -39,9 +42,9 @@
 #define GROWLIGHT_PIN       23
 
 // 🆕 Shelter Array Pins
-#define NUM_SENSORS         5
+#define NUM_SENSORS         4
 #define SERVO_PIN           32
-#define SENSOR_PINS_INIT    {4, 16, 17, 5, 18}
+#define SENSOR_PINS_INIT    {4, 33, 25, 18}
 
 // ====================================================================
 // 📌 MQ137 SETTINGS
@@ -51,32 +54,38 @@
 // ====================================================================
 // 📌 LIGHT THRESHOLDS (LUX)
 // ====================================================================
-#define DARK_THRESHOLD      1.5
-#define LOW_THRESHOLD       100.0
-#define MEDIUM_THRESHOLD    500.0
-#define BRIGHT_THRESHOLD    1000.0
+#define DARK_THRESHOLD      5.0        // Triggers full brightness at 5 lux or lower
+#define LOW_THRESHOLD       50.0       // Was 100, now lower for more light output
+#define MEDIUM_THRESHOLD    300.0      // Was 500, now lower
+#define BRIGHT_THRESHOLD    800.0      // Was 1000, now lower
 
 // ====================================================================
 // 📌 GROW LIGHT BRIGHTNESS LEVELS
 // ====================================================================
 #define BRIGHTNESS_OFF      0
-#define BRIGHTNESS_LOW      38      // 15%
-#define BRIGHTNESS_MEDIUM   76      // 30%
-#define BRIGHTNESS_HIGH     255     // 100%
+#define BRIGHTNESS_LOW      60        // Was 38 (15%), now 60 (24%)
+#define BRIGHTNESS_MEDIUM   120       // Was 76 (30%), now 120 (47%)
+#define BRIGHTNESS_HIGH     255       // 100% - maximum power
 
 // ====================================================================
 // 📌 PWM SETTINGS
 // ====================================================================
-#define LEDC_CHANNEL        0
+#define LEDC_CHANNEL        0      // Grow Light (Channel 0)
+#define SERVO_LEDC_CHANNEL  2      
 #define PWM_FREQ            5000
 #define PWM_RES             8
+
+// ====================================================================
+// 📌 I2C NOISE FILTERING (Protects BH1750 from servo EMI)
+// ====================================================================
+#define I2C_CLOCK_STRETCH   200000  // Slow I2C to reduce noise sensitivity
 
 // ====================================================================
 // 📌 TIMING SETTINGS
 // ====================================================================
 #define READ_DELAY_MS         100
 #define STABLE_READS_NEEDED   1
-#define DIMMING_STEP          50
+#define DIMMING_STEP          10      // Was 50 - faster ramp to full brightness (255/10 = 25ms steps)
 
 // 🆕 SHELTER TIMING & POLARITY SETTINGS
 // ====================================================================
