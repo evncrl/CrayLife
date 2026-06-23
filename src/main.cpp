@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <time.h>
 #include "config.h"
 #include "Ammonia_UV.h"
 #include "BHT1751.h"
@@ -41,12 +42,15 @@ IR shelterSubsystem(
 );
 
 // ====================================================================
-// TIMERS (Non-blocking Timing Tasks)
+// TIMERS & STATE TRACKERS
 // ====================================================================
 unsigned long lastEnvironmentTime = 0;
-const unsigned long ENVIRONMENT_INTERVAL = 1000;
+const unsigned long ENVIRONMENT_INTERVAL = 3000; // Sent every 3000ms
 
-unsigned long lastShelterTime = 0;
+// 🆕 Real-Time Daily Trigger Flag
+// 🆕 Dual-Schedule Lock Tracking Flags
+bool triggeredBreakfastToday = false; 
+bool triggeredDinnerToday    = false;
 
 // ====================================================================
 // DASHBOARD CACHING (for value-only updates)
@@ -152,6 +156,36 @@ void loop() {
 
     unsigned long currentMillis = millis();
 
+// ----------------------------------------------------------------
+    // 📌 LIVE TIME SCHEDULE CHECK (Dual Feeding Mode)
+    // ----------------------------------------------------------------
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) { 
+        int currentHour   = timeinfo.tm_hour;
+        int currentMinute = timeinfo.tm_min;
+        // 1. Check for Breakfast Schedule (8:00 AM)
+        if (currentHour == BREAKFAST_HOUR && currentMinute == BREAKFAST_MINUTE) {
+            if (!triggeredBreakfastToday) {
+                Serial.println("\n[SCHEDULE] 8:00 AM Breakfast Feeding Time! Activating feeder dispenser...");
+                shelterSubsystem.shakeShelter(); 
+                triggeredBreakfastToday = true;  
+            }
+        } 
+        // 2. Check for Dinner Schedule (8:00 PM / 20:00)
+        else if (currentHour == DINNER_HOUR && currentMinute == DINNER_MINUTE) {
+            if (!triggeredDinnerToday) {
+                Serial.println("\n[SCHEDULE] 8:00 PM Dinner Feeding Time! Activating feeder dispenser...");
+                shelterSubsystem.shakeShelter(); 
+                triggeredDinnerToday = true;   
+            }
+        } 
+        // 3. Reset Window: If it is any other minute of the day, release the safety locks
+        else {
+            triggeredBreakfastToday = false;
+            triggeredDinnerToday = false;
+        }
+    }
+
     // ----------------------------------------------------------------
     // TASK 2: RUN ENVIRONMENTAL UPDATE & MQTT TELEMETRY (Every 1000ms / 3000ms)
     // ----------------------------------------------------------------
@@ -165,11 +199,17 @@ void loop() {
         String ammoniaPayload = String(ammoniaSubsystem.getRawAmmonia());
         mqttManager.publish(MQTT_TOPIC_AMMONIA, ammoniaPayload.c_str());
 
+        String uvPayload = ammoniaSubsystem.getRawAmmonia() > AMMONIA_THRESHOLD ? "ON" : "OFF";
+        mqttManager.publish(MQTT_TOPIC_CONTROL, uvPayload.c_str());
+
         String luxPayload = String(growLight.getLux(), 1); 
         mqttManager.publish(MQTT_TOPIC_LIGHT_LUX, luxPayload.c_str());
 
         String lightstatusPayload = growLight.getLightStatus();
         mqttManager.publish(MQTT_TOPIC_LIGHT_STATUS, lightstatusPayload.c_str());
+
+        bool shelterOccupied = shelterSubsystem.isTrackingActive();
+        mqttManager.publish(MQTT_TOPIC_SHELTER_COUNT, shelterOccupied ? "SHELTER OCCUPIED" : "SHELTER EMPTY");
 
         mqttManager.publish(MQTT_TOPIC_STATUS, "ONLINE");
 
@@ -186,6 +226,7 @@ void loop() {
         Serial.print("Ammonia RAW ADC  : "); Serial.println(ammoniaSubsystem.getRawAmmonia()); 
         Serial.print("Sensor Voltage   : "); Serial.print(ammoniaSubsystem.getVoltage());    Serial.println(" V");
         Serial.print("UV Sterilizer    : "); 
+
         if (ammoniaSubsystem.getRawAmmonia() > AMMONIA_THRESHOLD) {
             Serial.println("[ALERT] ON - HIGH AMMONIA");
         } else {

@@ -47,6 +47,19 @@
 #define SENSOR_PINS_INIT    {4, 33, 25, 18}
 
 // ====================================================================
+// 📌 NTP LIVE TIME FEEDING SCHEDULES (24-Hour Format)
+// ====================================================================
+#define NTP_SERVER          "pool.ntp.org"
+#define GMT_OFFSET_SEC      28800  // UTC+8 Offset for the Philippines (8 hours * 3600 seconds)
+#define DAYLIGHT_OFFSET_SEC 0      // No Daylight Savings Time in the Philippines
+// --- Breakfast Schedule (8:00 AM) ---
+#define BREAKFAST_HOUR      8
+#define BREAKFAST_MINUTE    0
+// --- Dinner Schedule (8:00 PM) ---
+#define DINNER_HOUR         20     // 24-hour equivalent for 8:00 PM
+#define DINNER_MINUTE       0
+
+// ====================================================================
 // 📌 MQ137 SETTINGS
 // ====================================================================
 #define AMMONIA_THRESHOLD   1000
